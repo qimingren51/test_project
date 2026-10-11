@@ -1,0 +1,3 @@
+# 导出的备份里有真实财务数据，不要提交
+zichan-backup-*.json
+zichan-history-*.csv
