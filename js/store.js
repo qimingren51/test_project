@@ -30,6 +30,8 @@ export const S = {
   openKeys: new Set(), // 配置页里已展开的行（不保存）
   sub: null,          // 设置标签页里打开的二级页面：profile | about（不保存）
   navDir: null,       // 刚发生的页面切换方向：push | pop，用来播放转场动画（不保存）
+  ratesConfirmed: false, // 用户是否亲自填过汇率；没有的话，有外币账户时首页会提醒
+  lastBackup: '',     // 上次导出 JSON 备份的日期（YYYY-MM-DD），用来提醒备份
   rates: { ...DEFAULT_RATES }, // 汇率：1 单位该币种 = 多少人民币。属于用户填的数据，“恢复默认设置”不会重置它
   profile: { name: '', color: 'blue', emoji: '' },
 };
@@ -41,7 +43,7 @@ const listeners = new Set();
 export const onChange = fn => listeners.add(fn);
 const emit = () => listeners.forEach(fn => fn());
 
-const PREF_KEYS = ['tab', 'rates', ...Object.keys(DEFAULTS)];
+const PREF_KEYS = ['tab', 'rates', 'ratesConfirmed', 'lastBackup', ...Object.keys(DEFAULTS)];
 const savePrefs = () => jset(PREFS_KEY, Object.fromEntries(PREF_KEYS.map(k => [k, S[k]])));
 
 // 资料来自本机存储或导入的备份，都不可信，统一清洗
@@ -71,6 +73,8 @@ export function loadState() {
   S.conv = p.conv === 'green' ? 'green' : 'red';
   S.theme = THEMES.some(([k]) => k === p.theme) ? p.theme : DEFAULTS.theme;
   S.rates = cleanRates(p.rates);
+  S.ratesConfirmed = p.ratesConfirmed === true;
+  S.lastBackup = /^\d{4}-\d{2}-\d{2}$/.test(p.lastBackup) ? p.lastBackup : '';
   S.staleDays = STALE_OPTIONS.includes(p.staleDays) ? p.staleDays : DEFAULTS.staleDays;
   S.profile = cleanProfile(jget(PROFILE_KEY));
   const d = jget(DATA_KEY);
@@ -84,8 +88,9 @@ export function setPref(patch) {
 }
 
 // 修改汇率。silent 为 true 时只保存不重绘（用户正在输入时重绘会让输入框丢焦点）
-export function setRates(patch, { silent = false } = {}) {
+export function setRates(patch, { silent = false, confirmed = true } = {}) {
   S.rates = cleanRates({ ...S.rates, ...patch });
+  S.ratesConfirmed = confirmed; // 恢复默认汇率时传 false：又回到了估计值
   savePrefs();
   if (!silent) emit();
 }

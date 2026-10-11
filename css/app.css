@@ -271,3 +271,10 @@ a.row{color:inherit;text-decoration:none}
 .frow .unit{color:var(--label-2);flex:none}
 .frow.bad input{color:var(--red)}
 .sec-f.warn{color:var(--warn)}
+
+/* ===== 一键盘点：本金变动；编辑弹层：删除某条记录 ===== */
+.pm{flex:none;width:34px;height:38px;border-radius:10px;background:var(--fill);color:var(--tint);font-size:var(--fs-body);font-weight:600;text-align:center}
+.pm[aria-expanded="true"]{background:var(--tint-bg)}
+.bflow{background:var(--card)}
+.bflow input{color:var(--label)}
+.delrec{font-size:var(--fs-foot);color:var(--red);padding:6px 0 6px 6px;flex:none}

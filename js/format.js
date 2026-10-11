@@ -68,7 +68,7 @@ export function agoText(d) {
 
 // 解析用户输入的金额：允许千分位逗号、空格和各种货币符号；无法解析或非有限数时返回 NaN
 export const num = s => {
-  const t = String(s).replace(/HK\$|[,，\s¥￥$€£]/g, '');
+  const t = String(s).replace(/HK\$|[,，\s¥￥$€£]/g, '').replace(/[−–]/g, '-');
   const n = t === '' ? NaN : Number(t);
   return Number.isFinite(n) ? n : NaN;
 };

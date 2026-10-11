@@ -77,7 +77,7 @@ function addHTML() {
   const t = todayStr();
   return shell('新增账户', '保存', `<form id="f" data-kind="add" novalidate>
 <div class="group">
-${field('名称', '<input id="f-nm" name="nm" type="text" maxlength="24" autocomplete="off" enterkeyhint="next" placeholder="例如 余额宝">')}
+${field('名称', '<input id="f-nm" name="nm" type="text" maxlength="24" autocomplete="off" enterkeyhint="next" placeholder="可不填">')}
 ${field('类型', '<select id="f-cat" name="cat">' + catOptions('cash') + '</select>')}
 ${subField('cash', '')}
 ${platformField(defaultPlatform())}
@@ -88,7 +88,7 @@ ${field('当前市值', '<input id="f-val" name="val" inputmode="decimal" autoco
 ${field('投入本金', '<input id="f-cost" name="cost" inputmode="decimal" autocomplete="off" placeholder="不填则同市值">')}
 ${field('记录日期', `<input id="f-date" name="date" type="date" value="${t}" max="${t}">`)}
 </div>
-<p class="sec-f">股票、美股这类每天波动的资产，按记录当天的市值填就行，美股先折合成人民币。投入本金是你一共投进去多少钱，不确定可以先留空。</p>
+<p class="sec-f">名称不填会用「平台 · 子类」。金额按账户自己的币种填，英镑账户就填英镑，汇总时会按汇率折成人民币。股票、基金这类每天波动的资产，按记录当天的市值填就行。投入本金是你一共投进去多少钱，不确定可以先留空。</p>
 <p class="sec-f prev" id="prev"></p><p class="sec-f err" id="ferr" role="alert"></p></div></form>`);
 }
 
@@ -98,7 +98,8 @@ function editHTML(id) {
   const l = last(a), t = todayStr(), profit = r2(l.v - l.c);
   const rows = a.hist.slice(-7).reverse().map((h, i) => {
     const p = a.hist[a.hist.length - 2 - i];
-    return `<div class="row"><div class="body"><span class="t num">${h.d.replace(/-/g, '/')}</span></div><div class="r"><b>${mny(h.v, undefined, a.ccy)}</b><span class="c">${p ? sgnHTML(r2(h.v - p.v), false, 0) : '<span class="flat">首次记录</span>'}</span></div></div>`;
+    const del = a.hist.length > 1 ? `<button type="button" class="txt delrec" data-act="delrec" data-id="${esc(a.id)}" data-d="${h.d}">删除</button>` : '';
+    return `<div class="row"><div class="body"><span class="t num">${h.d.replace(/-/g, '/')}</span></div><div class="r"><b>${mny(h.v, undefined, a.ccy)}</b><span class="c">${p ? sgnHTML(r2(h.v - p.v), false, 0) : '<span class="flat">首次记录</span>'}</span></div>${del}</div>`;
   }).join('');
   return shell(esc(a.name), '保存', `
 <div class="group pad kv"><div><span>当前市值</span><b>${mny(l.v, 2, a.ccy)}</b></div><div><span>累计收益</span><b>${sgnHTML(profit, a.ccy)}${l.c > 0 ? `<small class="${profit > 0 ? 'up' : profit < 0 ? 'down' : 'flat'}">${pct(profit / l.c, true)}</small>` : ''}</b></div></div>
@@ -120,7 +121,7 @@ ${platformField(a.platform)}
 ${field('币种', '<select id="f-ccy" name="ccy">' + ccyOptions(a.ccy) + '</select>')}
 ${field('累计本金', '<input id="f-cost" name="cost" inputmode="decimal" autocomplete="off" value="' + l.c + '">')}
 </details></div></form>
-<div class="sec"><div class="sec-h"><span>最近记录</span></div><div class="group">${rows}</div></div>
+<div class="sec"><div class="sec-h"><span>最近记录</span></div><div class="group">${rows}</div>${a.hist.length > 1 ? '<div class="sec-f">记错了可以删掉某一条，删除后无法恢复。</div>' : ''}</div>
 <div class="group"><button type="button" class="row center danger" data-act="del" data-id="${esc(a.id)}">删除这个账户</button></div>`);
 }
 
@@ -128,13 +129,14 @@ function batchHTML() {
   const t = todayStr();
   const rows = groupByPlatform(S.accounts).map(g => `<div class="sec"><div class="sec-h"><span>${esc(g.p)}</span></div><div class="group">${g.arr.map(a => {
     const l = last(a);
-    return `<div class="row"><div class="body"><span class="t">${esc(a.name)}</span><span class="s">${mny(l.v, undefined, a.ccy)} · ${agoText(l.d)}</span></div><input class="bi" data-id="${esc(a.id)}" inputmode="decimal" autocomplete="off" placeholder="${S.hide ? '新市值' : l.v}" aria-label="${esc(a.name)} 的新市值"></div>`;
+    return `<div class="row"><div class="body"><span class="t">${esc(a.name)}</span><span class="s">${mny(l.v, undefined, a.ccy)} · ${agoText(l.d)}</span></div><input class="bi" data-id="${esc(a.id)}" inputmode="decimal" autocomplete="off" placeholder="${S.hide ? '新市值' : mny(l.v, undefined, a.ccy)}" aria-label="${esc(a.name)} 的新市值"><button type="button" class="pm" data-act="flowtoggle" aria-label="记录 ${esc(a.name)} 的本金变动">±</button></div>
+<label class="frow bflow" hidden><span>本金变动</span><input class="bf" data-id="${esc(a.id)}" inputmode="decimal" autocomplete="off" placeholder="存入填 +1000，取出填 -1000" aria-label="${esc(a.name)} 的本金变动"></label>`;
   }).join('')}</div></div>`).join('');
   return shell('一键盘点', '保存', `<form id="f" data-kind="batch" novalidate>
 <div class="sec"><div class="group">
 ${field('盘点日期', `<input id="f-date" name="date" type="date" value="${t}" max="${t}">`)}
 <label class="frow carry"><span>沿用未填账户的上次市值</span><span class="switch"><input type="checkbox" name="carry" checked><i></i></span></label>
-</div><p class="sec-f">只填有变化的账户。开启沿用后，没填的账户也会按上次市值记一笔，每次盘点的总资产就是同一天的快照。股票、美股按今天的市值填，美股先折合成人民币。</p></div>
+</div><p class="sec-f">只填有变化的账户。开启沿用后，没填的账户也会按上次市值记一笔，每次盘点的总资产就是同一天的快照。金额按各账户自己的币种填。这期间存入或取出了钱，点账户右边的「±」记下来，否则会被算成收益。</p></div>
 ${rows}
 <p class="sec-f err" id="ferr" role="alert"></p></form>`);
 }
@@ -150,7 +152,7 @@ const liveSheet = () => $('.sheet:not(.closing)');
 export const isSheetOpen = () => !!liveSheet();
 export const markDirty = () => { dirty = true; };
 
-export function openSheet(kind, id) {
+export function openSheet(kind, id, { animate = true } = {}) {
   closeSheet(true);
   opener = document.activeElement;
   dirty = false;
@@ -158,6 +160,7 @@ export function openSheet(kind, id) {
   $('#sheet-root').innerHTML = `<div class="sheet-bd" data-act="dismiss"></div><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">${html}</div>`;
   document.documentElement.style.overflow = 'hidden';
   const sheet = $('.sheet');
+  if (!animate) { sheet.style.animation = 'none'; $('.sheet-bd').style.animation = 'none'; }
   sheet.focus({ preventScroll: true });
   enableDrag(sheet, $('.sheet-bd'));
   updatePreview();
@@ -293,8 +296,9 @@ export function updatePreview() {
 /* ---------- 提交 ---------- */
 
 function submitAdd(el, td) {
-  const nm = el.nm.value.trim();
-  if (!nm) return ferr('请填写账户名称');
+  const platform = readPlatform(el), sub = readSub(el);
+  // 名称选填：不填就用“平台 · 子类”（没有子类就用类型名）
+  const nm = el.nm.value.trim() || `${platform} · ${sub || CATS.find(c => c.k === el.cat.value).n}`;
   const v = num(el.val.value);
   if (!(v >= 0)) return ferr('请填写当前市值，数字即可');
   const co = el.cost.value.trim(), c = co === '' ? v : num(co);
@@ -302,8 +306,8 @@ function submitAdd(el, td) {
   const date = el.date.value || td;
   if (!DATE_RE.test(date) || date > td) return ferr('日期不能晚于今天');
   const acc = {
-    id: newId(), name: nm.slice(0, 24), platform: readPlatform(el),
-    cat: el.cat.value, sub: readSub(el), ccy: el.ccy.value, createdAt: date, hist: [{ d: date, v: r2(v), c: r2(c) }],
+    id: newId(), name: nm.slice(0, 24), platform,
+    cat: el.cat.value, sub, ccy: el.ccy.value, createdAt: date, hist: [{ d: date, v: r2(v), c: r2(c) }],
   };
   if (!upsertAccounts([acc])) return ferr(SAVE_FAIL);
   closeSheet();
@@ -347,18 +351,24 @@ function submitEdit(f, el, td) {
 function submitBatch(f, el, td) {
   const date = el.date.value || td;
   if (!DATE_RE.test(date) || date > td) return ferr('日期不能晚于今天');
-  const carry = el.carry.checked, inputs = new Map();
+  const carry = el.carry.checked, inputs = new Map(), flows = new Map();
   f.querySelectorAll('input.bi').forEach(i => inputs.set(i.dataset.id, i.value.trim()));
+  f.querySelectorAll('input.bf').forEach(i => flows.set(i.dataset.id, i.value.trim()));
   const jobs = [];
   let up = 0, keep = 0, skip = 0;
   for (const a of S.accounts) {
-    const l = last(a), raw = inputs.get(a.id) || '';
-    if (date < l.d) { if (raw !== '') skip++; continue; } // 早于上次记录的不改历史
+    const l = last(a), raw = inputs.get(a.id) || '', flowRaw = flows.get(a.id) || '';
+    if (date < l.d) { if (raw !== '' || flowRaw !== '') skip++; continue; } // 早于上次记录的不改历史
     let entry = null;
-    if (raw !== '') {
-      const v = num(raw);
+    // 本金变动：正数是存入，负数是取出
+    const flow = flowRaw === '' ? 0 : num(flowRaw);
+    if (!Number.isFinite(flow)) return ferr('「' + a.name + '」的本金变动不是数字');
+    const c = Math.max(0, r2(l.c + flow));
+    if (raw !== '' || flow) {
+      // 只记了本金变动、没填新市值：当作市值也跟着变了这么多
+      const v = raw !== '' ? num(raw) : r2(l.v + flow);
       if (!(v >= 0)) return ferr('「' + a.name + '」的市值不是数字');
-      if (!(r2(v) === l.v && date === l.d)) { entry = { d: date, v: r2(v), c: l.c }; up++; }
+      if (!(r2(v) === l.v && c === l.c && date === l.d)) { entry = { d: date, v: r2(v), c }; up++; }
     } else if (carry && date !== l.d) {
       entry = { d: date, v: l.v, c: l.c };
       keep++;
@@ -381,6 +391,23 @@ export function submitForm(f) {
   if (f.dataset.kind === 'add') submitAdd(el, td);
   else if (f.dataset.kind === 'edit') submitEdit(f, el, td);
   else submitBatch(f, el, td);
+}
+
+// 删除某一条历史记录（至少保留一条），删完原地刷新编辑弹层
+export function deleteRecord(id, d) {
+  const a = S.accounts.find(x => x.id === id);
+  if (!a || a.hist.length < 2) return;
+  if (!upsertAccounts([{ ...a, hist: a.hist.filter(h => h.d !== d) }])) { ferr(SAVE_FAIL); return; }
+  openSheet('edit', id, { animate: false });
+  toast('已删除这条记录');
+}
+
+// 一键盘点：点“±”展开该账户的本金变动输入框
+export function toggleBatchFlow(btn) {
+  const row = btn.closest('.row').nextElementSibling;
+  row.hidden = !row.hidden;
+  btn.setAttribute('aria-expanded', String(!row.hidden));
+  if (!row.hidden) row.querySelector('input').focus();
 }
 
 export function deleteAccount(id) {

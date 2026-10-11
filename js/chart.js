@@ -17,7 +17,7 @@ function axisFmt(v) {
 export function drawTrend(host, pts, onScrub = () => {}) {
   onScrub(null);
   if (pts.length < 2) {
-    host.innerHTML = '<div class="empty">记录两次以上，这里就会画出资产变化曲线。</div>';
+    host.innerHTML = ''; // 上方的摘要区已经写了说明，这里不再重复
     return;
   }
   const W = Math.max(260, Math.floor(host.clientWidth) || 320);

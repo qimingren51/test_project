@@ -6,6 +6,7 @@ import { esc } from './dom.js';
 import { ROW_GLYPHS, CHEV } from './icons.js';
 import { seg } from './ui.js';
 import { iconTile } from './views.js';
+import { agoText } from './format.js';
 
 export const SUB_TITLES = { profile: '个人资料', rates: '汇率', about: '关于' };
 
@@ -56,7 +57,7 @@ ${row('#8E8E93', ROW_GLYPHS.eyeoff, '隐藏金额', toggle('hide', S.hide), 'lab
   const remind = `<div class="group">${row('#FF9500', ROW_GLYPHS.bell, '待更新提醒', select('staleDays', S.staleDays, STALE_OPTIONS.map(d => [d, `${d} 天`]), '待更新提醒天数'), 'label')}</div>`;
 
   const data = `<div class="group">
-${navRow('var(--cat1)', ROW_GLYPHS.share, '导出备份', 'JSON，之后可以导入恢复', 'data-act="exp" data-v="json"')}
+${navRow('var(--cat1)', ROW_GLYPHS.share, '导出备份', `JSON，可以导入恢复 · ${S.lastBackup ? `上次是${agoText(S.lastBackup)}` : '还没导出过'}`, 'data-act="exp" data-v="json"')}
 ${navRow('var(--cat3)', ROW_GLYPHS.table, '导出明细', 'CSV，可以用 Excel 打开', 'data-act="exp" data-v="csv"')}
 <label class="row tl filebtn">${iconTile('var(--cat2)', ROW_GLYPHS.download)}<span class="body"><span class="t">导入备份</span><span class="s">选择之前导出的 JSON 文件</span></span>${CHEV}<input type="file" id="imp" accept=".json,application/json" hidden></label>
 </div>`;

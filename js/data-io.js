@@ -1,5 +1,5 @@
 // 备份导出（JSON / CSV）与导入。
-import { S, upsertAccounts, setProfile, setRates } from './store.js';
+import { S, upsertAccounts, setProfile, setRates, setPref } from './store.js';
 import { CATS, catIdx, normAcc } from './model.js';
 import { todayStr } from './util.js';
 import { $, toast } from './dom.js';
@@ -62,7 +62,7 @@ export function exportData(kind) {
     data = '﻿' + rows.join('\n'); // BOM 让 Excel 正确识别 UTF-8
   }
   saveFile(name, data)
-    .then(() => toast('已保存'))
+    .then(() => { toast('已保存'); if (kind === 'json') setPref({ lastBackup: day }); })
     .catch(e => { if (!(e && e.code === 'declined')) showFallback(data); });
 }
 

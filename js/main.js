@@ -2,7 +2,7 @@
 import { S, loadState, setPref, setProfile, setRates, resetPrefs, onChange, clearAccounts } from './store.js';
 import { buildModel, convertAccounts } from './model.js';
 import { sampleAccounts } from './sample.js';
-import { todayStr } from './util.js';
+import { todayStr, diffDays } from './util.js';
 import { $, toast, arm } from './dom.js';
 import { weekday, num } from './format.js';
 import { DEFAULT_RATES, BASE_CCY } from './config.js';
@@ -10,7 +10,7 @@ import { ICONS, TAB_ICONS, CHEV_LEFT } from './icons.js';
 import { homeHTML, accHTML, bannerHTML, scrubHTML } from './views.js';
 import { settingsHTML, subHTML, SUB_TITLES, avatarInner } from './pages.js';
 import { drawTrend } from './chart.js';
-import { openSheet, closeSheet, requestDismiss, markDirty, isSheetOpen, submitForm, updatePreview, onFormChange, deleteAccount } from './sheets.js';
+import { openSheet, closeSheet, requestDismiss, markDirty, isSheetOpen, submitForm, updatePreview, onFormChange, deleteAccount, deleteRecord, toggleBatchFlow } from './sheets.js';
 import { snapshotSegs, animateSegs, snapshotSwitches, animateSwitches } from './ui.js';
 import { exportData, importFile } from './data-io.js';
 
@@ -28,6 +28,19 @@ function applyTheme() {
     if (!m.dataset.orig) m.dataset.orig = m.content;
     m.content = S.theme === 'system' ? m.dataset.orig : THEME_COLORS[S.theme];
   });
+}
+
+// 顶部提示条，同一时间只显示一条：示例数据 > 汇率还是估计值 > 该备份了
+function bannerKind(sub) {
+  if (sub) return null;
+  if (S.demo) return 'demo';
+  if (S.tab === 'set') return null;
+  if (!S.ratesConfirmed && S.accounts.some(a => a.ccy !== BASE_CCY)) return 'rates';
+  // 用了两周以上，且从没备份过或上次备份超过 30 天
+  const today = todayStr();
+  const first = S.accounts.reduce((m, a) => (a.hist[0].d < m ? a.hist[0].d : m), today);
+  if (diffDays(first, today) >= 14 && (!S.lastBackup || diffDays(S.lastBackup, today) >= 30)) return 'backup';
+  return null;
 }
 
 function render() {
@@ -53,7 +66,8 @@ function render() {
     if (b.dataset.v === S.tab) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  $('#banner').innerHTML = S.demo && !sub ? bannerHTML() : '';
+  const banner = bannerKind(sub);
+  $('#banner').innerHTML = banner ? bannerHTML(banner) : '';
 
   // 只渲染当前标签页，其余清空
   // 汇总都折算成基础货币；账户行里显示的是各账户自己币种的原始金额（折算后的账户用 src 指回去）
@@ -163,7 +177,10 @@ function onAction(t) {
     case 'close': closeSheet(); break;        // “取消”按钮：直接关闭
     case 'dismiss': requestDismiss(); break;  // 点遮罩：有未保存输入时只回弹
     case 'exp': exportData(v); break;
-    case 'resetrates': setRates(DEFAULT_RATES); toast('已恢复默认汇率'); break;
+    case 'resetrates': setRates(DEFAULT_RATES, { confirmed: false }); toast('已恢复默认汇率'); break;
+    case 'gorates': setTab('set'); openSub('rates'); break;
+    case 'flowtoggle': toggleBatchFlow(t); break;
+    case 'delrec': arm(t, '确认删除', () => deleteRecord(id, t.dataset.d)); break;
     case 'reset': arm(t, '再点一次，确认恢复', () => { resetPrefs(); toast('已恢复默认设置'); }); break;
     case 'clear':
       arm(t, '再点一次，确认清空', () => toast(clearAccounts() ? '已清空' : '清空失败，请稍后再试'));
@@ -217,6 +234,11 @@ document.addEventListener('toggle', e => {
     else S.openKeys.delete(d.dataset.key);
   }
 }, true);
+// 金额输入框获得焦点时全选，改数字不用先删掉旧的（iOS 需要等一下才能选中）
+document.addEventListener('focusin', e => {
+  const t = e.target;
+  if (t.matches && t.matches('input[inputmode=decimal]') && t.value) setTimeout(() => t.select(), 0);
+});
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && isSheetOpen()) requestDismiss();
   else if (e.key === 'Enter' && e.target.id === 'pf-name') e.target.blur();

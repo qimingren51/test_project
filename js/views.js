@@ -22,8 +22,16 @@ function batchRow(lastP, stale) {
   return `<button class="row tl" data-act="batch">${iconTile('var(--tint)', ROW_GLYPHS.batch)}<span class="body"><span class="t">一键盘点</span><span class="s">上次盘点 ${agoText(lastP.d)}${stale ? ` · ${stale} 个账户待更新` : ''}</span></span>${CHEV}</button>`;
 }
 
-export const bannerHTML = () =>
-  `<div class="banner">${ICONS.info}<span>示例数据，不是你的资产</span><button class="txt" data-act="add">开始记录</button></div>`;
+// 页面顶部的提示条，同一时间只显示一条（优先级见 main.js 的 bannerKind）
+const BANNERS = {
+  demo: () => ['示例数据，不是你的资产', 'data-act="add"', '开始记录'],
+  rates: () => ['英镑、美元账户的汇率还是估计值', 'data-act="gorates"', '去设置'],
+  backup: () => [`${S.lastBackup ? `上次备份是${agoText(S.lastBackup)}` : '还没有备份过'}，数据只存在这台设备上`, 'data-act="exp" data-v="json"', '导出备份'],
+};
+export const bannerHTML = kind => {
+  const [text, attrs, action] = BANNERS[kind]();
+  return `<div class="banner">${ICONS.info}<span>${text}</span><button class="txt" ${attrs}>${action}</button></div>`;
+};
 
 /* ---------- 总览 ---------- */
 
@@ -56,20 +64,22 @@ const detailRow = p => `<div class="row"><div class="body"><span class="t num">$
 function trendHTML(M) {
   const { rp } = M;
   const ch = rangeChange(rp);
+  const enough = M.pts.length >= 2; // 一共不到两次记录时，时间范围、图例、明细都没有意义，先不显示
   const ranges = seg('range', Object.entries(RANGE_LABELS), S.range, { act: 'range', cls: 'flat ranges', label: '时间范围' });
+  const empty = enough ? '这个时间范围里不到两次记录，换个更长的范围看看。' : '再记录一次，这里就会画出总资产的变化曲线，并把变化拆成追加投入和投资收益。';
   const chgBlock = ch
     ? `<div class="lead">${RANGES[S.range]} · ${fmtRange(ch.from, ch.to)}</div>
 <div class="main">${sgnAmt(ch.dv, true)}</div>
 <div class="parts"><span>追加投入<b>${sgnAmt(ch.dc, true)}</b></span><span>投资收益<b>${sgnHTML(ch.dp, true)}</b></span></div>`
-    : `<div class="lead">${RANGES[S.range]}</div><div class="s" style="margin-top:4px">记录满两次后，这里显示总资产的变化，并拆成追加投入和投资收益。</div>`;
+    : `<div class="lead">${enough ? RANGES[S.range] : '还没有变化可看'}</div><div class="s" style="margin-top:4px">${empty}</div>`;
   const rows = rp.slice().reverse().slice(0, 80).map(detailRow).join('');
+  const legend = '<div class="legend"><span><i class="ln" style="background:var(--tint)"></i>总资产</span><span><i class="ln" style="background:var(--cost)"></i>本金</span><span><i class="bd"></i>两线之间是累计收益</span></div>';
   return `<section class="sec"><div class="sec-h big"><span>资产变化</span></div><div class="group chartcard"><div class="pad cc">
 <div class="chg"><div class="chg-sum">${chgBlock}</div><div class="chg-scrub" hidden></div></div>
 <div class="chart" id="trend"></div>
-${ranges}
-<div class="legend"><span><i class="ln" style="background:var(--tint)"></i>总资产</span><span><i class="ln" style="background:var(--cost)"></i>本金</span><span><i class="bd"></i>两线之间是累计收益</span></div>
+${enough ? ranges + legend : ''}
 </div>
-<details class="disc"><summary class="row"><span class="t tint">查看数据明细</span>${CHEV}</summary><div class="tscroll">${rows}</div></details>
+${enough ? `<details class="disc"><summary class="row"><span class="t tint">查看数据明细</span>${CHEV}</summary><div class="tscroll">${rows}</div></details>` : ''}
 </div></section>`;
 }
 
@@ -126,8 +136,8 @@ export function homeHTML(M) {
 
 export function accHTML(M) {
   const by = S.accGroup;
-  // 说明行：按平台分组时写类型和子类，按类型分组时写平台和子类
-  const detail = a => (by === 'cat' ? esc(a.platform) : catOf(a).n) + (a.sub ? ` · ${esc(a.sub)}` : '');
+  // 说明行：按平台分组时写子类（没有子类写类型，图标已经表示了类型），按类型分组时写平台和子类
+  const detail = a => (by === 'cat' ? esc(a.platform) + (a.sub ? ` · ${esc(a.sub)}` : '') : a.sub ? esc(a.sub) : catOf(a).n);
   // 行里显示账户自己币种的金额；外币账户再写上折合人民币多少
   const accRow = a => {
     const src = a.src, l = last(src), pv = prevOf(src), dv = pv ? r2(l.v - pv.v) : null;
