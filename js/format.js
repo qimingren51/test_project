@@ -1,6 +1,7 @@
 // 金额、百分比、日期的展示格式。隐藏金额（S.hide）时所有金额一律显示成 ••••。
 import { S } from './store.js';
 import { diffDays, parseDate, todayStr } from './util.js';
+import { TRI_UP, TRI_DOWN } from './icons.js';
 
 export const MASK = '••••';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -37,7 +38,7 @@ export function chgHTML(n, p) {
   const up = n > 0, r = Math.round(Math.abs(n));
   const body = S.hide ? MASK : (r === 0 ? '&lt;1' : fmtN(r, 0));
   const ratio = p != null && Number.isFinite(p) ? ` (${Math.abs(p * 100).toFixed(2)}%)` : '';
-  return `<span class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${body}${ratio}</span>`;
+  return `<span class="${up ? 'up' : 'down'}">${up ? TRI_UP : TRI_DOWN}${body}${ratio}</span>`;
 }
 
 const fmtMD = d => `${+d.slice(5, 7)}月${+d.slice(8, 10)}日`;

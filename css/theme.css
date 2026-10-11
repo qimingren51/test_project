@@ -1,17 +1,32 @@
+/* 字体：苹果设备走系统自带的 SF Pro + 苹方（-apple-system），不需要下载任何字体文件。
+   其他设备上，拉丁字母和数字回退到自托管的 Inter（和 SF 最接近的开源字体，SIL OFL 授权），
+   汉字用各系统自带的中文字体。浏览器只在真正用到时才会下载它，苹果设备上不会下载。 */
+@font-face{
+font-family:"Inter Web";font-style:normal;font-weight:100 900;font-display:swap;
+src:url("../assets/fonts/inter-latin-wght-normal.woff2") format("woff2-variations"),url("../assets/fonts/inter-latin-wght-normal.woff2") format("woff2");
+unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 /* 设计令牌：默认浅色，跟随系统切换深色。涨跌色可通过 data-conv="gup" 反转（绿涨红跌）。 */
 :root{
 color-scheme:light dark;
 --bg:#F2F2F7; --card:#FFFFFF; --fill:rgba(120,120,128,.12); --fill-press:rgba(120,120,128,.18);
 --label:#000000; --label-2:#68686E; --label-3:#7A7A80;
 --sep:rgba(60,60,67,.2); --grid:rgba(60,60,67,.12); --chev:rgba(60,60,67,.3);
---tint:#0A66D6; --tint-bg:rgba(10,102,214,.1); --on-tint:#FFFFFF;
+--tint:#0071E3; --tint-bg:rgba(0,113,227,.1); --on-tint:#FFFFFF;
 --red:#D12A1E; --green:#197A35; --warn:#B25000; --warn-bg:rgba(255,149,0,.16);
 --up:var(--red); --down:var(--green);
 --bar:rgba(246,246,248,.78); --glass:rgba(255,255,255,.7); --thumb:#FFFFFF; --sw-off:rgba(120,120,128,.32);
 --hud:rgba(44,44,46,.92); --scrim:rgba(0,0,0,.4);
---cost:#8E8E93; --band:rgba(10,102,214,.12);
+--cost:#8E8E93; --band:rgba(0,113,227,.12);
 --cat1:#0A7AFF; --cat2:#FF8A1F; --cat3:#1FB59F; --cat4:#E6A100; --cat5:#F0508A; --cat6:#7B61E8; --cat0:#A1A1A6;
---font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+--fill-hover:rgba(120,120,128,.08);
+--r-card:20px; --r-md:14px; --r-tile:9px; --r-sheet:32px;
+--ease-ios:cubic-bezier(.32,.72,0,1);   /* iOS 弹层、滑动的标准曲线 */
+--spring:cubic-bezier(.3,1.25,.5,1);     /* 轻微回弹，用于分段控件的滑块 */
+--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter Web","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",system-ui,sans-serif;
+/* 文字样式：对应 iOS 默认字号下的 Large Title / Title / Body / Footnote / Caption */
+--fs-large:34px; --fs-title1:28px; --fs-title2:22px; --fs-body:17px; --fs-sub:15px; --fs-foot:13px; --fs-cap:12px; --fs-cap2:11px;
 }
 :root[data-conv="gup"]{--up:var(--green);--down:var(--red)}
 

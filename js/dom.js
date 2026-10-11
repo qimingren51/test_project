@@ -9,9 +9,9 @@ let toastTimer;
 export function toast(msg) {
   const t = $('#toast');
   t.textContent = msg;
-  t.hidden = false;
+  t.classList.add('on');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 2800);
 }
 
 // 危险操作的“二次确认”：第一次点击把按钮文字换成提示，4 秒内再点一次才执行。
