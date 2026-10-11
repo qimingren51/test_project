@@ -30,3 +30,22 @@ export function animateSegs(before) {
     el.style.setProperty('--i', now);
   });
 }
+
+// 开关同理：render() 重绘后新开关直接是最终状态。
+// 用户点开关时，change 事件里先把它拨回原状态再改偏好（见 main.js），重绘前的快照里就是旧状态，
+// 重绘后让新开关从旧状态拨过去。
+export const snapshotSwitches = () =>
+  new Map([...document.querySelectorAll('input[data-pref][type=checkbox]')].map(el => [el.dataset.pref, el.checked]));
+
+export function animateSwitches(before) {
+  document.querySelectorAll('input[data-pref][type=checkbox]').forEach(el => {
+    const was = before.get(el.dataset.pref), now = el.checked;
+    if (was == null || was === now) return;
+    const sw = el.closest('.switch');
+    sw.classList.add('nt');      // 暂时关掉过渡，放到旧状态
+    el.checked = was;
+    void sw.offsetWidth;
+    sw.classList.remove('nt');
+    el.checked = now;
+  });
+}

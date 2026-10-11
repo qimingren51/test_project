@@ -2,6 +2,7 @@
 import { S } from './store.js';
 import { diffDays, parseDate, todayStr } from './util.js';
 import { TRI_UP, TRI_DOWN } from './icons.js';
+import { CURRENCIES, BASE_CCY } from './config.js';
 
 export const MASK = '••••';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -13,15 +14,18 @@ export const fmtN = (n, dec) => {
   const d = dec != null ? dec : (a >= 1000 || Math.abs(a - Math.round(a)) < .005 ? 0 : 2);
   return a.toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d });
 };
-export const mny = (n, dec) => (S.hide ? MASK : '¥' + (n < 0 ? '−' : '') + fmtN(n, dec));
+// 币种符号。不传币种就用人民币（总资产等汇总都以人民币计）
+export const sym = ccy => CURRENCIES[ccy || BASE_CCY].sym;
+export const mny = (n, dec, ccy) => (S.hide ? MASK : sym(ccy) + (n < 0 ? '−' : '') + fmtN(n, dec));
 export const amt = n => (S.hide ? MASK : (n < 0 ? '−' : '') + fmtN(n));
 
-// 带正负号的金额；cur 为 true 时加 ¥，dec 为 0 时取整
+// 带正负号的金额；cur 为 true 时加基础货币符号，cur 是币种代码（如 'GBP'）时加那个币种的符号，dec 为 0 时取整
 export const sgnAmt = (n, cur, dec) => {
+  const s = cur ? (cur === true ? sym() : sym(cur)) : '';
   if (S.hide) return MASK;
   const a = dec === 0 ? Math.round(Math.abs(n)) : Math.abs(n);
-  if (a < .005) return cur ? '¥0' : '0';
-  return (n > 0 ? '+' : '−') + (cur ? '¥' : '') + fmtN(a, dec);
+  if (a < .005) return s + '0';
+  return (n > 0 ? '+' : '−') + s + fmtN(a, dec);
 };
 // 同上，并按涨跌着色
 export const sgnHTML = (n, cur, dec) => {
@@ -62,9 +66,9 @@ export function agoText(d) {
   return Math.floor(n / 365) + '年前';
 }
 
-// 解析用户输入的金额：允许千分位逗号、空格和 ¥；无法解析或非有限数时返回 NaN
+// 解析用户输入的金额：允许千分位逗号、空格和各种货币符号；无法解析或非有限数时返回 NaN
 export const num = s => {
-  const t = String(s).replace(/[,，\s¥￥]/g, '');
+  const t = String(s).replace(/HK\$|[,，\s¥￥$€£]/g, '');
   const n = t === '' ? NaN : Number(t);
   return Number.isFinite(n) ? n : NaN;
 };

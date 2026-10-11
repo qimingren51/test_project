@@ -1,5 +1,5 @@
 // 备份导出（JSON / CSV）与导入。
-import { S, upsertAccounts } from './store.js';
+import { S, upsertAccounts, setProfile, setRates } from './store.js';
 import { CATS, catIdx, normAcc } from './model.js';
 import { todayStr } from './util.js';
 import { $, toast } from './dom.js';
@@ -50,13 +50,14 @@ export function exportData(kind) {
     name = 'zichan-backup-' + day + '.json';
     data = JSON.stringify({
       app: 'zichan-kanban', v: 1, exportedAt: day,
-      accounts: accs.map(a => ({ id: a.id, name: a.name, platform: a.platform, cat: a.cat, createdAt: a.createdAt, hist: a.hist })),
+      profile: S.profile, rates: S.rates,
+      accounts: accs.map(a => ({ id: a.id, name: a.name, platform: a.platform, cat: a.cat, sub: a.sub, ccy: a.ccy, createdAt: a.createdAt, hist: a.hist })),
     }, null, 1);
   } else {
     name = 'zichan-history-' + day + '.csv';
-    const rows = ['账户,平台,类型,日期,市值,本金'];
+    const rows = ['账户,平台,类型,子类,币种,日期,市值,本金'];
     for (const a of accs) {
-      for (const h of a.hist) rows.push([csvCell(a.name), csvCell(a.platform), csvCell(CATS[catIdx(a.cat)].n), h.d, h.v, h.c].join(','));
+      for (const h of a.hist) rows.push([csvCell(a.name), csvCell(a.platform), csvCell(CATS[catIdx(a.cat)].n), csvCell(a.sub), a.ccy, h.d, h.v, h.c].join(','));
     }
     data = '﻿' + rows.join('\n'); // BOM 让 Excel 正确识别 UTF-8
   }
@@ -74,6 +75,8 @@ export async function importFile(file) {
     const accs = list.map(normAcc).filter(Boolean);
     if (!accs.length) { toast('文件里没有可用的账户'); return; }
     if (!upsertAccounts(accs)) { toast('无法写入本机存储，请稍后再试'); return; }
+    if (!Array.isArray(j) && j.profile) setProfile(j.profile); // 备份里有个人资料、汇率就一起恢复
+    if (!Array.isArray(j) && j.rates) setRates(j.rates);
     toast(`已导入 ${accs.length} 个账户`);
   } catch (e) {
     toast('读取失败，请选择之前导出的 JSON 备份');

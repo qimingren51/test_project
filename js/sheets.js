@@ -2,6 +2,7 @@
 // 以及 iOS 风格的弹出 / 收起动画、下拉关闭、有未保存输入时的回弹保护。
 import { S, upsertAccounts, removeAccounts } from './store.js';
 import { CATS, last, newId, groupByPlatform } from './model.js';
+import { CAT_SUBS, PLATFORM_GROUPS, CUSTOM, CURRENCIES, CCY_LIST } from './config.js';
 import { DATE_RE, r2, todayStr } from './util.js';
 import { $, esc, toast } from './dom.js';
 import { mny, amt, sgnHTML, pct, agoText, num } from './format.js';
@@ -15,10 +16,59 @@ function shell(title, save, body) {
 }
 const field = (label, inner) => `<label class="frow"><span>${label}</span>${inner}</label>`;
 const catOptions = sel => CATS.map(c => `<option value="${c.k}"${c.k === sel ? ' selected' : ''}>${c.n}</option>`).join('');
-function platformList() {
-  const set = new Set(['支付宝', '微信', '银行', '券商', '基金平台', '其他']);
-  for (const a of S.accounts) set.add(a.platform);
-  return [...set].map(p => `<option value="${esc(p)}"></option>`).join('');
+const ccyOptions = current => CCY_LIST.map(c => optionTag(c, `${CURRENCIES[c].sym} ${CURRENCIES[c].name}`, c === current)).join('');
+const optionTag = (v, text, selected) => `<option value="${esc(v)}"${selected ? ' selected' : ''}>${esc(text)}</option>`;
+
+// 平台下拉：先是“我用过的”自定义平台，然后是预设的分组（银行、支付与钱包、券商、基金与理财、其他），最后是“自定义…”
+function platformOptions(current) {
+  const preset = new Set(PLATFORM_GROUPS.flatMap(([, items]) => items.map(([v]) => v)));
+  const used = [...new Set(S.accounts.map(a => a.platform))].filter(p => !preset.has(p));
+  const groups = PLATFORM_GROUPS.map(([g, items]) => `<optgroup label="${esc(g)}">${items.map(([v, t]) => optionTag(v, t, v === current)).join('')}</optgroup>`).join('');
+  return (used.length ? `<optgroup label="我用过的">${used.map(p => optionTag(p, p, p === current)).join('')}</optgroup>` : '') + groups + optionTag(CUSTOM, '自定义…', false);
+}
+const platformField = current =>
+  field('平台', `<select name="platsel" id="f-platsel">${platformOptions(current)}</select>`) +
+  `<label class="frow" data-custom-for="platsel" hidden><span>平台名称</span><input name="platcustom" type="text" maxlength="12" autocomplete="off" placeholder="例如 某某银行"></label>`;
+
+// 子类下拉：该类型下的预设，加上“不细分”和“自定义…”；账户原来的子类不在预设里时也保留
+function subOptions(cat, current) {
+  const list = CAT_SUBS[cat] || [];
+  return optionTag('', '不细分', !current) + list.map(v => optionTag(v, v, v === current)).join('') +
+    (current && !list.includes(current) ? optionTag(current, current, true) : '') + optionTag(CUSTOM, '自定义…', false);
+}
+const subField = (cat, current) =>
+  field('子类', `<select name="subsel" id="f-subsel">${subOptions(cat, current)}</select>`) +
+  `<label class="frow" data-custom-for="subsel" hidden><span>子类名称</span><input name="subcustom" type="text" maxlength="12" autocomplete="off" placeholder="例如 余额宝"></label>`;
+
+// 读表单里的平台、子类：选了“自定义…”就用输入框里的文字
+const readChoice = (el, sel, input, fallback) => (el[sel].value === CUSTOM ? el[input].value.trim().slice(0, 12) || fallback : el[sel].value);
+const readPlatform = el => readChoice(el, 'platsel', 'platcustom', '其他');
+const readSub = el => readChoice(el, 'subsel', 'subcustom', '');
+const defaultPlatform = () => (S.accounts.length ? S.accounts[S.accounts.length - 1].platform : '其他'); // 默认选最近新增的账户用的平台
+
+// 表单里的联动：改了类型要换成该类型的子类选项；选了“自定义…”要出现输入框。返回 true 表示已处理。
+export function onFormChange(t) {
+  if (t.name === 'cat') {
+    const sub = $('#f-subsel');
+    if (sub) { sub.innerHTML = subOptions(t.value, ''); toggleCustom(sub); }
+    return true;
+  }
+  if (t.name === 'platsel' || t.name === 'subsel') {
+    toggleCustom(t);
+    // 美股基本都是美元计价：币种还是默认的人民币时顺手切成美元，用户可以再改
+    if (t.name === 'subsel' && t.value === '美股') {
+      const ccy = t.closest('form').elements.ccy;
+      if (ccy && ccy.value === 'CNY') ccy.value = 'USD';
+    }
+    return true;
+  }
+  return false;
+}
+function toggleCustom(sel) {
+  const row = sel.closest('form').querySelector(`[data-custom-for="${sel.name}"]`);
+  if (!row) return;
+  row.hidden = sel.value !== CUSTOM;
+  if (!row.hidden) row.querySelector('input').focus();
 }
 
 /* ---------- 表单 HTML ---------- */
@@ -28,10 +78,12 @@ function addHTML() {
   return shell('新增账户', '保存', `<form id="f" data-kind="add" novalidate>
 <div class="group">
 ${field('名称', '<input id="f-nm" name="nm" type="text" maxlength="24" autocomplete="off" enterkeyhint="next" placeholder="例如 余额宝">')}
-${field('平台', '<input id="f-plat" name="plat" type="text" list="plats" maxlength="12" autocomplete="off" enterkeyhint="next" placeholder="例如 支付宝"><datalist id="plats">' + platformList() + '</datalist>')}
 ${field('类型', '<select id="f-cat" name="cat">' + catOptions('cash') + '</select>')}
+${subField('cash', '')}
+${platformField(defaultPlatform())}
 </div>
 <div class="sec"><div class="group">
+${field('币种', '<select id="f-ccy" name="ccy">' + ccyOptions('CNY') + '</select>')}
 ${field('当前市值', '<input id="f-val" name="val" inputmode="decimal" autocomplete="off" placeholder="0.00">')}
 ${field('投入本金', '<input id="f-cost" name="cost" inputmode="decimal" autocomplete="off" placeholder="不填则同市值">')}
 ${field('记录日期', `<input id="f-date" name="date" type="date" value="${t}" max="${t}">`)}
@@ -46,10 +98,10 @@ function editHTML(id) {
   const l = last(a), t = todayStr(), profit = r2(l.v - l.c);
   const rows = a.hist.slice(-7).reverse().map((h, i) => {
     const p = a.hist[a.hist.length - 2 - i];
-    return `<div class="row"><div class="body"><span class="t num">${h.d.replace(/-/g, '/')}</span></div><div class="r"><b>${mny(h.v)}</b><span class="c">${p ? sgnHTML(r2(h.v - p.v), false, 0) : '<span class="flat">首次记录</span>'}</span></div></div>`;
+    return `<div class="row"><div class="body"><span class="t num">${h.d.replace(/-/g, '/')}</span></div><div class="r"><b>${mny(h.v, undefined, a.ccy)}</b><span class="c">${p ? sgnHTML(r2(h.v - p.v), false, 0) : '<span class="flat">首次记录</span>'}</span></div></div>`;
   }).join('');
   return shell(esc(a.name), '保存', `
-<div class="group pad kv"><div><span>当前市值</span><b>${mny(l.v, 2)}</b></div><div><span>累计收益</span><b>${sgnHTML(profit, true)}${l.c > 0 ? `<small class="${profit > 0 ? 'up' : profit < 0 ? 'down' : 'flat'}">${pct(profit / l.c, true)}</small>` : ''}</b></div></div>
+<div class="group pad kv"><div><span>当前市值</span><b>${mny(l.v, 2, a.ccy)}</b></div><div><span>累计收益</span><b>${sgnHTML(profit, a.ccy)}${l.c > 0 ? `<small class="${profit > 0 ? 'up' : profit < 0 ? 'down' : 'flat'}">${pct(profit / l.c, true)}</small>` : ''}</b></div></div>
 <form id="f" data-kind="edit" data-id="${esc(a.id)}" novalidate>
 <div class="sec"><div class="group">
 ${field('新的市值', '<input id="f-val" name="val" inputmode="decimal" autocomplete="off" value="' + l.v + '">')}
@@ -62,8 +114,10 @@ ${field('记录日期', `<input id="f-date" name="date" type="date" value="${t}"
 </div><p class="sec-f prev" id="prev"></p><p class="sec-f err" id="ferr" role="alert"></p></div>
 <div class="group"><details class="more"><summary class="frow"><span>修改账户信息</span>${CHEV}</summary>
 ${field('名称', '<input id="f-nm" name="nm" type="text" maxlength="24" autocomplete="off" value="' + esc(a.name) + '">')}
-${field('平台', '<input id="f-plat" name="plat" type="text" list="plats" maxlength="12" autocomplete="off" value="' + esc(a.platform) + '"><datalist id="plats">' + platformList() + '</datalist>')}
 ${field('类型', '<select id="f-cat" name="cat">' + catOptions(a.cat) + '</select>')}
+${subField(a.cat, a.sub)}
+${platformField(a.platform)}
+${field('币种', '<select id="f-ccy" name="ccy">' + ccyOptions(a.ccy) + '</select>')}
 ${field('累计本金', '<input id="f-cost" name="cost" inputmode="decimal" autocomplete="off" value="' + l.c + '">')}
 </details></div></form>
 <div class="sec"><div class="sec-h"><span>最近记录</span></div><div class="group">${rows}</div></div>
@@ -74,7 +128,7 @@ function batchHTML() {
   const t = todayStr();
   const rows = groupByPlatform(S.accounts).map(g => `<div class="sec"><div class="sec-h"><span>${esc(g.p)}</span></div><div class="group">${g.arr.map(a => {
     const l = last(a);
-    return `<div class="row"><div class="body"><span class="t">${esc(a.name)}</span><span class="s">${mny(l.v)} · ${agoText(l.d)}</span></div><input class="bi" data-id="${esc(a.id)}" inputmode="decimal" autocomplete="off" placeholder="${S.hide ? '新市值' : l.v}" aria-label="${esc(a.name)} 的新市值"></div>`;
+    return `<div class="row"><div class="body"><span class="t">${esc(a.name)}</span><span class="s">${mny(l.v, undefined, a.ccy)} · ${agoText(l.d)}</span></div><input class="bi" data-id="${esc(a.id)}" inputmode="decimal" autocomplete="off" placeholder="${S.hide ? '新市值' : l.v}" aria-label="${esc(a.name)} 的新市值"></div>`;
   }).join('')}</div></div>`).join('');
   return shell('一键盘点', '保存', `<form id="f" data-kind="batch" novalidate>
 <div class="sec"><div class="group">
@@ -233,7 +287,7 @@ export function updatePreview() {
   const p = $('#prev');
   if (!(v >= 0) || !(c >= 0)) { p.textContent = ''; return; }
   const pr = r2(v - c);
-  p.innerHTML = `保存后：本金 ${mny(Math.max(0, r2(c)))} · 收益 ${sgnHTML(pr, true)}${c > 0 ? `（${pct(pr / c, true)}）` : ''}`;
+  p.innerHTML = `保存后：本金 ${mny(Math.max(0, r2(c)), undefined, el.ccy.value)} · 收益 ${sgnHTML(pr, el.ccy.value)}${c > 0 ? `（${pct(pr / c, true)}）` : ''}`;
 }
 
 /* ---------- 提交 ---------- */
@@ -248,8 +302,8 @@ function submitAdd(el, td) {
   const date = el.date.value || td;
   if (!DATE_RE.test(date) || date > td) return ferr('日期不能晚于今天');
   const acc = {
-    id: newId(), name: nm.slice(0, 24), platform: (el.plat.value.trim() || '其他').slice(0, 12),
-    cat: el.cat.value, createdAt: date, hist: [{ d: date, v: r2(v), c: r2(c) }],
+    id: newId(), name: nm.slice(0, 24), platform: readPlatform(el),
+    cat: el.cat.value, sub: readSub(el), ccy: el.ccy.value, createdAt: date, hist: [{ d: date, v: r2(v), c: r2(c) }],
   };
   if (!upsertAccounts([acc])) return ferr(SAVE_FAIL);
   closeSheet();
@@ -282,8 +336,8 @@ function submitEdit(f, el, td) {
   if (date === l.d) hist[hist.length - 1] = entry; else hist.push(entry);
   const next = Object.assign({}, a, {
     name: (el.nm.value.trim() || a.name).slice(0, 24),
-    platform: (el.plat.value.trim() || a.platform).slice(0, 12),
-    cat: el.cat.value, hist,
+    platform: readPlatform(el),
+    cat: el.cat.value, sub: readSub(el), ccy: el.ccy.value, hist,
   });
   if (!upsertAccounts([next])) return ferr(SAVE_FAIL);
   closeSheet();

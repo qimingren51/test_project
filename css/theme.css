@@ -30,8 +30,9 @@ color-scheme:light dark;
 }
 :root[data-conv="gup"]{--up:var(--green);--down:var(--red)}
 
+/* 深色令牌写了两份：跟随系统（用户没有手动选浅色时），和手动选了深色。改颜色时两处一起改。 */
 @media (prefers-color-scheme:dark){
-:root{
+:root:not([data-theme="light"]){
 --bg:#000000; --card:#1C1C1E; --fill:rgba(120,120,128,.24); --fill-press:rgba(120,120,128,.32);
 --label:#FFFFFF; --label-2:#9D9DA3; --label-3:#8A8A90;
 --sep:rgba(84,84,88,.6); --grid:rgba(84,84,88,.4); --chev:rgba(235,235,245,.3);
@@ -43,3 +44,16 @@ color-scheme:light dark;
 --cat1:#3987e5; --cat2:#d95926; --cat3:#199e70; --cat4:#c98500; --cat5:#d55181; --cat6:#9085e9; --cat0:#6E6E73;
 }
 }
+:root[data-theme="dark"]{
+color-scheme:dark;
+--bg:#000000; --card:#1C1C1E; --fill:rgba(120,120,128,.24); --fill-press:rgba(120,120,128,.32);
+--label:#FFFFFF; --label-2:#9D9DA3; --label-3:#8A8A90;
+--sep:rgba(84,84,88,.6); --grid:rgba(84,84,88,.4); --chev:rgba(235,235,245,.3);
+--tint:#0A84FF; --tint-bg:rgba(10,132,255,.2); --on-tint:#FFFFFF;
+--red:#FF453A; --green:#30D158; --warn:#FF9F0A; --warn-bg:rgba(255,159,10,.2);
+--bar:rgba(22,22,24,.72); --glass:rgba(58,58,60,.6); --thumb:#636366; --sw-off:rgba(120,120,128,.4);
+--scrim:rgba(0,0,0,.6);
+--cost:#8E8E93; --band:rgba(10,132,255,.22);
+--cat1:#3987e5; --cat2:#d95926; --cat3:#199e70; --cat4:#c98500; --cat5:#d55181; --cat6:#9085e9; --cat0:#6E6E73;
+}
+:root[data-theme="light"]{color-scheme:light}
