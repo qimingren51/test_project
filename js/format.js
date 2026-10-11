@@ -1,6 +1,6 @@
 // 金额、百分比、日期的展示格式。隐藏金额（S.hide）时所有金额一律显示成 ••••。
 import { S } from './store.js';
-import { diffDays, todayStr } from './util.js';
+import { diffDays, parseDate, todayStr } from './util.js';
 
 export const MASK = '••••';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -41,6 +41,9 @@ export function chgHTML(n, p) {
 }
 
 const fmtMD = d => `${+d.slice(5, 7)}月${+d.slice(8, 10)}日`;
+
+// 选中某一天时图上方显示的日期，如「2026年9月27日 周日」
+export const fmtFullDate = d => `${+d.slice(0, 4)}年${+d.slice(5, 7)}月${+d.slice(8, 10)}日 周${weekday(parseDate(d))}`;
 
 // 区间两端跨年、或不在今年时带上年份，避免出现「10月11日 到 10月11日」这种看不出是哪一年的写法
 export const fmtRange = (a, b) => {

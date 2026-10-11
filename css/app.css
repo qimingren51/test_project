@@ -87,15 +87,8 @@ button.row:active,summary.frow:active{background:var(--fill-press)}
 .g-tot{fill:none;stroke:var(--tint);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
 .g-dot{fill:var(--tint);stroke:var(--card);stroke-width:2.5}
 .g-dot2{fill:var(--cost);stroke:var(--card);stroke-width:2.5}
-.g-xh{stroke:var(--label-3);stroke-width:1;opacity:.6}
+.g-xh{stroke:var(--label-2);stroke-width:1}
 .g-end{fill:var(--label);font-size:12px;font-weight:600;font-family:var(--font);font-variant-numeric:tabular-nums}
-.tt{position:absolute;top:2px;z-index:2;pointer-events:none;background:var(--pop);color:var(--label);-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);border-radius:12px;padding:9px 12px;font-size:12px;min-width:148px;box-shadow:0 6px 24px rgba(0,0,0,.16),0 0 0 .5px var(--sep)}
-.tt .d{color:var(--label-2);margin-bottom:3px}
-.tt .r{display:flex;align-items:center;gap:6px;line-height:1.75;width:100%;justify-items:initial}
-.tt .r i{display:inline-block;width:12px;height:3px;border-radius:2px;background:var(--tint)}
-.tt .r i.c{background:var(--cost)}
-.tt .r i.n{background:none}
-.tt .r b{margin-left:auto;padding-left:10px;font-size:14px}
 .ranges{display:flex;gap:4px}
 .ranges button{flex:1;height:30px;border-radius:8px;text-align:center;font-size:13px;font-weight:600;color:var(--label-2)}
 .ranges button[aria-pressed="true"]{background:var(--fill);color:var(--label)}

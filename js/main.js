@@ -6,7 +6,7 @@ import { todayStr } from './util.js';
 import { $, toast, arm } from './dom.js';
 import { weekday } from './format.js';
 import { ICONS } from './icons.js';
-import { homeHTML, accHTML, setHTML, bannerHTML } from './views.js';
+import { homeHTML, accHTML, setHTML, bannerHTML, scrubHTML } from './views.js';
 import { drawTrend } from './chart.js';
 import { openSheet, closeSheet, isSheetOpen, submitForm, updatePreview, deleteAccount } from './sheets.js';
 import { exportData, importFile } from './data-io.js';
@@ -43,7 +43,17 @@ function render() {
     panel.hidden = key !== S.tab;
     panel.innerHTML = key === S.tab ? views[key]() : '';
   }
-  if (S.tab === 'home') drawTrend($('#trend'), model.rp);
+  if (S.tab === 'home') drawChart();
+}
+
+// 趋势图 + 选中某一天时把图上方的区间摘要换成该日读数
+function drawChart() {
+  const sum = $('.chg-sum'), scrub = $('.chg-scrub');
+  drawTrend($('#trend'), model.rp, p => {
+    sum.hidden = !!p;
+    scrub.hidden = !p;
+    if (p) scrub.innerHTML = scrubHTML(p);
+  });
 }
 
 function setTab(tab) {
@@ -108,6 +118,6 @@ let lastW = $('#app').clientWidth;
 if (window.ResizeObserver) {
   new ResizeObserver(() => {
     const w = $('#app').clientWidth;
-    if (w !== lastW) { lastW = w; if (S.tab === 'home') drawTrend($('#trend'), model.rp); }
+    if (w !== lastW) { lastW = w; if (S.tab === 'home') drawChart(); }
   }).observe($('#app'));
 }

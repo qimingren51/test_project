@@ -3,7 +3,7 @@ import { S, RANGES, RANGE_LABELS } from './store.js';
 import { CATS, catIdx, last, prevOf, rangeChange, monthly, allocation, groupByPlatform } from './model.js';
 import { diffDays, r2, todayStr } from './util.js';
 import { esc } from './dom.js';
-import { MASK, mny, amt, sgnAmt, sgnHTML, pct, chgHTML, fmtRange, agoText, colOf } from './format.js';
+import { MASK, mny, amt, sgnAmt, sgnHTML, pct, chgHTML, fmtRange, fmtFullDate, agoText, colOf } from './format.js';
 import { ICONS, CAT_GLYPHS, CHEV } from './icons.js';
 
 const STALE_DAYS = 14; // 超过这么多天没更新就提示“待更新”
@@ -56,19 +56,26 @@ function trendHTML(M) {
   const ranges = Object.keys(RANGE_LABELS)
     .map(k => `<button data-act="range" data-v="${k}" aria-pressed="${S.range === k}">${RANGE_LABELS[k]}</button>`).join('');
   const chgBlock = ch
-    ? `<div class="chg"><div class="lead">${RANGES[S.range]} · ${fmtRange(ch.from, ch.to)}</div>
+    ? `<div class="lead">${RANGES[S.range]} · ${fmtRange(ch.from, ch.to)}</div>
 <div class="main">${sgnAmt(ch.dv, true)}</div>
-<div class="parts"><span>追加投入<b>${sgnAmt(ch.dc, true)}</b></span><span>投资收益<b>${sgnHTML(ch.dp, true)}</b></span></div></div>`
-    : `<div class="chg"><div class="lead">${RANGES[S.range]}</div><div class="s" style="margin-top:4px">记录满两次后，这里显示总资产的变化，并拆成追加投入和投资收益。</div></div>`;
+<div class="parts"><span>追加投入<b>${sgnAmt(ch.dc, true)}</b></span><span>投资收益<b>${sgnHTML(ch.dp, true)}</b></span></div>`
+    : `<div class="lead">${RANGES[S.range]}</div><div class="s" style="margin-top:4px">记录满两次后，这里显示总资产的变化，并拆成追加投入和投资收益。</div>`;
   const rows = rp.slice().reverse().slice(0, 80)
     .map(p => `<tr><td>${p.d.replace(/-/g, '/')}</td><td>${amt(p.v)}</td><td>${amt(p.c)}</td><td>${sgnHTML(r2(p.v - p.c), false, 0)}</td></tr>`).join('');
   return `<section class="sec"><div class="sec-h big"><span>资产变化</span></div><div class="group pad chartcard">
-${chgBlock}
+<div class="chg"><div class="chg-sum">${chgBlock}</div><div class="chg-scrub" hidden></div></div>
 <div class="chart" id="trend"></div>
 <div class="ranges" role="group" aria-label="时间范围">${ranges}</div>
 <div class="legend"><span><i class="ln" style="background:var(--tint)"></i>总资产</span><span><i class="ln" style="background:var(--cost)"></i>本金</span><span><i class="bd"></i>两线之间是累计收益</span></div>
 <details><summary class="dsum"><span>查看数据表</span>${CHEV}</summary><div class="tscroll"><table><thead><tr><th>日期</th><th>总资产</th><th>本金</th><th>累计收益</th></tr></thead><tbody>${rows}</tbody></table></div></details>
 </div></section>`;
+}
+
+// 在趋势图上选中某一天时，图上方显示的读数（替换区间摘要）
+export function scrubHTML(p) {
+  return `<div class="lead">${fmtFullDate(p.d)}</div>
+<div class="main">${mny(p.v)}</div>
+<div class="parts"><span>本金<b>${mny(p.c)}</b></span><span>累计收益<b>${sgnHTML(r2(p.v - p.c), true)}</b></span></div>`;
 }
 
 function allocHTML(M) {

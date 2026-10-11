@@ -8,7 +8,7 @@ color-scheme:light dark;
 --red:#D12A1E; --green:#197A35; --warn:#B25000; --warn-bg:rgba(255,149,0,.16);
 --up:var(--red); --down:var(--green);
 --bar:rgba(246,246,248,.78); --glass:rgba(255,255,255,.7); --thumb:#FFFFFF; --sw-off:rgba(120,120,128,.32);
---pop:rgba(255,255,255,.9); --hud:rgba(44,44,46,.92); --scrim:rgba(0,0,0,.4);
+--hud:rgba(44,44,46,.92); --scrim:rgba(0,0,0,.4);
 --cost:#8E8E93; --band:rgba(10,102,214,.12);
 --cat1:#0A7AFF; --cat2:#FF8A1F; --cat3:#1FB59F; --cat4:#E6A100; --cat5:#F0508A; --cat6:#7B61E8; --cat0:#A1A1A6;
 --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
@@ -23,7 +23,7 @@ color-scheme:light dark;
 --tint:#0A84FF; --tint-bg:rgba(10,132,255,.2); --on-tint:#FFFFFF;
 --red:#FF453A; --green:#30D158; --warn:#FF9F0A; --warn-bg:rgba(255,159,10,.2);
 --bar:rgba(22,22,24,.72); --glass:rgba(58,58,60,.6); --thumb:#636366; --sw-off:rgba(120,120,128,.4);
---pop:rgba(44,44,46,.92); --scrim:rgba(0,0,0,.6);
+--scrim:rgba(0,0,0,.6);
 --cost:#8E8E93; --band:rgba(10,132,255,.22);
 --cat1:#3987e5; --cat2:#d95926; --cat3:#199e70; --cat4:#c98500; --cat5:#d55181; --cat6:#9085e9; --cat0:#6E6E73;
 }
