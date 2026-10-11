@@ -78,7 +78,7 @@ button.row:active,summary.frow:active{background:var(--fill-press)}
 .chg .parts{display:flex;flex-wrap:wrap;gap:2px 18px;margin-top:6px;font-size:14px;color:var(--label-2)}
 .chg .parts b{font-weight:600;color:var(--label);margin-left:4px;font-variant-numeric:tabular-nums}
 .chart{position:relative;min-width:0}
-.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;overflow:visible}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;overflow:visible;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .chart svg:focus-visible{outline-offset:4px}
 .g-grid{stroke:var(--grid);stroke-width:1}
 .g-txt{fill:var(--label-3);font-size:11px;font-family:var(--font);font-variant-numeric:tabular-nums}

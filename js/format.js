@@ -40,7 +40,14 @@ export function chgHTML(n, p) {
   return `<span class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${body}${ratio}</span>`;
 }
 
-export const fmtMD = d => `${+d.slice(5, 7)}月${+d.slice(8, 10)}日`;
+const fmtMD = d => `${+d.slice(5, 7)}月${+d.slice(8, 10)}日`;
+
+// 区间两端跨年、或不在今年时带上年份，避免出现「10月11日 到 10月11日」这种看不出是哪一年的写法
+export const fmtRange = (a, b) => {
+  const withYear = a.slice(0, 4) !== b.slice(0, 4) || +a.slice(0, 4) !== new Date().getFullYear();
+  const f = d => (withYear ? `${+d.slice(0, 4)}年` : '') + fmtMD(d);
+  return `${f(a)} 到 ${f(b)}`;
+};
 
 export function agoText(d) {
   const n = diffDays(d, todayStr());

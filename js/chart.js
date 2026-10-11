@@ -63,6 +63,7 @@ ${grid}${ylab}${xlab}<path class="g-band" d="${band}"/><path class="g-cost" d="$
   let cur = -1;
 
   function show(i) {
+    if (i === cur && !tt.hidden) return;
     cur = i;
     const p = pts[i], x = X(p.d);
     const l = xh.firstElementChild;
@@ -83,14 +84,31 @@ ${grid}${ylab}${xlab}<path class="g-band" d="${band}"/><path class="g-cost" d="$
     pts.forEach((p, i) => { const d = Math.abs(X(p.d) - x); if (d < bd) { bd = d; bi = i; } });
     return bi;
   }
-  svg.addEventListener('pointerdown', e => show(idxAt(e.clientX)));
+  // 鼠标：悬停即显示，移开收起。
+  // 触屏：点按、或横向拖动时显示，抬手后保留（方便读数），点图表以外的地方收起。
+  // 触屏在 pointerdown 时先不显示：纵向滑动想滚页面时，浏览器会发 pointercancel 接管，
+  // 如果一按下就显示，滚动时浮窗会先闪一下再消失。
+  svg.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') show(idxAt(e.clientX)); });
   svg.addEventListener('pointermove', e => show(idxAt(e.clientX)));
+  svg.addEventListener('pointerup', e => { if (e.pointerType === 'touch') show(idxAt(e.clientX)); });
+  svg.addEventListener('pointercancel', hide); // 手势被浏览器当成页面滚动
   svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hide(); });
+  svg.addEventListener('blur', hide);
   svg.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault();
-      const base = cur < 0 ? pts.length - 1 : cur;
-      show(Math.max(0, Math.min(pts.length - 1, base + (e.key === 'ArrowRight' ? 1 : -1))));
-    } else if (e.key === 'Escape') hide();
+    const last = pts.length - 1;
+    const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+    if (step) show(Math.max(0, Math.min(last, (cur < 0 ? last : cur) + step)));
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(last);
+    else if (e.key === 'Escape') hide();
+    else return;
+    e.preventDefault();
   });
+  dismissOutside = { host, hide };
 }
+
+// 点图表以外的任何地方收起浮窗（触屏上没有“鼠标移开”，也不会触发 blur）
+let dismissOutside = null;
+document.addEventListener('pointerdown', e => {
+  if (dismissOutside && !dismissOutside.host.contains(e.target)) dismissOutside.hide();
+});

@@ -3,7 +3,7 @@ import { S, RANGES, RANGE_LABELS } from './store.js';
 import { CATS, catIdx, last, prevOf, rangeChange, monthly, allocation, groupByPlatform } from './model.js';
 import { diffDays, r2, todayStr } from './util.js';
 import { esc } from './dom.js';
-import { MASK, mny, amt, sgnAmt, sgnHTML, pct, chgHTML, fmtMD, agoText, colOf } from './format.js';
+import { MASK, mny, amt, sgnAmt, sgnHTML, pct, chgHTML, fmtRange, agoText, colOf } from './format.js';
 import { ICONS, CAT_GLYPHS, CHEV } from './icons.js';
 
 const STALE_DAYS = 14; // 超过这么多天没更新就提示“待更新”
@@ -56,7 +56,7 @@ function trendHTML(M) {
   const ranges = Object.keys(RANGE_LABELS)
     .map(k => `<button data-act="range" data-v="${k}" aria-pressed="${S.range === k}">${RANGE_LABELS[k]}</button>`).join('');
   const chgBlock = ch
-    ? `<div class="chg"><div class="lead">${RANGES[S.range]} · ${fmtMD(ch.from)} 到 ${fmtMD(ch.to)}</div>
+    ? `<div class="chg"><div class="lead">${RANGES[S.range]} · ${fmtRange(ch.from, ch.to)}</div>
 <div class="main">${sgnAmt(ch.dv, true)}</div>
 <div class="parts"><span>追加投入<b>${sgnAmt(ch.dc, true)}</b></span><span>投资收益<b>${sgnHTML(ch.dp, true)}</b></span></div></div>`
     : `<div class="chg"><div class="lead">${RANGES[S.range]}</div><div class="s" style="margin-top:4px">记录满两次后，这里显示总资产的变化，并拆成追加投入和投资收益。</div></div>`;
